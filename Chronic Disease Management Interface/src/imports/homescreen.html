@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<!--
+  iOS 26 Home Screen Mockup — v2
+  ──────────────────────────────
+  Built pixel-exact from Figma node 754:62987
+  File: iOS and iPadOS 26 – Community (cp6wNJvMveJrEBESgSDJnG)
+
+  Assets sourced via Figma MCP (valid 7 days from build):
+    · iPhone 17 Pro Silver bezel
+    · Official iOS 26 wallpaper
+    · All official app icons (FaceTime, Calendar, Photos, Camera,
+      Mail, Notes, Reminders, Clock, News, TV, Games, App Store,
+      Maps, Health, Wallet, Settings + Phone, Safari, Messages, Music)
+    · Cellular / WiFi / Battery status icons
+    · Liquid Glass dock + search blur masks
+
+  Screen geometry (Figma node I754:46668):
+    Outer frame : 402 × 874 pt  rounded-[32px]  overflow-clip
+    Bezel image : 450 × 920 pt  at (-24, -23) → bleeds outside frame
+    Status bar  : h-62  pt-21 pb-19 px-24  gap-154
+    Widget frame: pt-26.333 pb-36 px-26.666
+    Widget      : 349 × 164 pt  rounded-[28px]
+    App icon    : 64 × 64 pt in 72 pt cell  (w-72)
+    App grid    : px-26 gap-y-17 justify-between  (4 col flex-wrap)
+    Search      : h-30 rounded-[100px] px-12 py-7
+    Dock outer  : pb-17 pt-20 px-17
+    Dock inner  : pb-19 pt-20 px-19 justify-between
+
+  Widget state machine: 5 states
+    Green / Yellow-Med / Yellow-Vital / Red-Med / Red-Vital
+    State selector dots embedded inside widget (bottom strip)
+    Taken + Skip action buttons shown in Yellow-Med state
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iOS 26 Home Screen</title>
+<style>
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { font-family: inherit; border: none; cursor: pointer; background: none; }
+img { display: block; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  /* subtle vignette so the phone pops */
+  background: radial-gradient(ellipse 80% 70% at 50% 50%, #1c1c1e 0%, #000 100%);
+}
+
+/* ══════════════════════════════════════════════════════════
+   PHONE WRAPPER
+   Sized to accommodate the bezel bleed:
+   bezel is 450×920 at (-24,-23) over a 402×874 screen.
+   So wrapper = 450×920, screen sits at left:24 top:23.
+   ══════════════════════════════════════════════════════════ */
+.phone {
+  position: relative;
+  width:  450px;
+  height: 920px;
+  flex-shrink: 0;
+}
+
+/* ── Screen clip ── */
+.screen {
+  position: absolute;
+  left: 24px;
+  top:  23px;
+  width:  402px;
+  height: 874px;
+  border-radius: 44px;   /* approx iPhone 17 Pro screen radius */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Wallpaper fills entire screen */
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Every direct child of .screen sits above wallpaper */
+.screen > *:not(.wallpaper):not(.bezel) { position: relative; z-index: 1; }
+
+/* ── Bezel overlay ── */
+.bezel {
+  position: absolute;
+  left: -24px;
+  top:  -23px;
+  width:  450px;
+  height: 920px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATUS BAR  (Figma: h≈62, pt-21 pb-19 px-24 gap-154)
+   ══════════════════════════════════════════════════════════ */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 154px;
+  padding: 21px 24px 19px;
+  flex-shrink: 0;
+  width: 402px;
+}
+
+.status-time {
+  flex: 1 0 0;
+  font-size: 17px;
+  font-weight: 590;  /* SF Pro Semibold */
+  color: #fff;
+  text-align: center;
+  letter-spacing: -0.2px;
+  line-height: 22px;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  white-space: nowrap;
+}
+
+.status-icons {
+  flex: 1 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 22px;
+}
+
+.status-icons img {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   WIDGET FRAME  (Figma: pt-26.333 pb-36 px-26.666)
+   ══════════════════════════════════════════════════════════ */
+.widget-frame {
+  padding: 26.333px 26.666px 36px;
+  flex-shrink: 0;
+  width: 402px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   WIDGET  (349 × 164  rounded-28  iOS 26 Liquid Glass)
+   ══════════════════════════════════════════════════════════ */
+.widget {
+  position: relative;
+  width:  349px;
+  height: 164px;
+  border-radius: 28px;
+  padding: 14px 16px 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(40px) saturate(220%) brightness(1.08);
+  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.08);
+  border: 0.5px solid rgba(255,255,255,0.62);
+  box-shadow:
+    0 0 0 0.5px rgba(0,0,0,0.04),
+    0 12px 48px rgba(0,0,0,0.20),
+    0 1px 0 rgba(255,255,255,0.92) inset;
+
+  transition:
+    background   0.45s cubic-bezier(0.4,0,0.2,1),
+    border-color 0.45s cubic-bezier(0.4,0,0.2,1),
+    box-shadow   0.45s cubic-bezier(0.4,0,0.2,1);
+}
+
+.widget[data-state="yellow-med"],
+.widget[data-state="yellow-vital"] {
+  border-color: rgba(255,204,0,0.38);
+  box-shadow:
+    0 0 0 0.5px rgba(255,204,0,0.14),
+    0 12px 48px rgba(255,153,0,0.22),
+    0 1px 0 rgba(255,255,255,0.92) inset;
+}
+
+.widget[data-state="red-med"],
+.widget[data-state="red-vital"] {
+  background: rgba(255,59,48,0.10);
+  border-color: rgba(255,59,48,0.38);
+  box-shadow:
+    0 0 0 0.5px rgba(255,59,48,0.20),
+    0 12px 48px rgba(255,59,48,0.28),
+    0 1px 0 rgba(255,255,255,0.68) inset;
+}
+
+.widget[data-state="red-med"]::after,
+.widget[data-state="red-vital"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background: rgba(255,59,48,0.11);
+  animation: redPulse 2.4s cubic-bezier(0.4,0,0.6,1) infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes redPulse {
+  0%,100% { opacity:0; transform:scale(1); }
+  40%      { opacity:1; transform:scale(1.015); }
+}
+
+/* ── Widget header row ── */
+.w-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 18px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.w-app-id {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.w-app-icon { width: 13px; height: 12px; display: flex; align-items: center; flex-shrink: 0; }
+.w-app-name {
+  font-family: ui-rounded,'SF Pro Rounded',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(60,60,67,0.58);
+  letter-spacing: 0.01em;
+}
+.w-time {
+  font-family: 'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(60,60,67,0.58);
+  letter-spacing: -0.1px;
+  transition: color 0.3s ease;
+}
+.w-time.alert { color: #FF3B30; font-weight: 700; }
+
+/* ── Widget body ── */
+.w-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 2px;
+}
+.w-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s ease, transform 0.42s cubic-bezier(0.34,1.56,0.64,1);
+}
+.w-label {
+  font-family: ui-rounded,'SF Pro Rounded',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  text-align: center;
+  letter-spacing: -0.4px;
+  line-height: 1.15;
+  transition: color 0.3s ease;
+}
+.w-sublabel {
+  font-family: 'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: rgba(60,60,67,0.58);
+  text-align: center;
+  letter-spacing: -0.05px;
+  line-height: 1.2;
+}
+
+/* ── Action buttons (yellow-med only) ── */
+.w-actions {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    max-height 0.38s cubic-bezier(0.4,0,0.2,1),
+    opacity    0.28s ease,
+    transform  0.32s cubic-bezier(0.34,1.56,0.64,1);
+}
+.w-actions.show { max-height: 30px; opacity: 1; transform: translateY(0); }
+
+.w-btn {
+  height: 28px;
+  border-radius: 10px;
+  font-family: ui-rounded,'SF Pro Rounded',-apple-system,sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.w-btn:active { transform: scale(0.93); opacity: 0.78; }
+.w-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
+.w-btn-taken { background: rgba(52,199,89,0.18);  color: #1a8c3e; }
+.w-btn-taken:hover { background: rgba(52,199,89,0.28); }
+.w-btn-skip  { background: rgba(142,142,147,0.14); color: #8e8e93; }
+.w-btn-skip:hover  { background: rgba(142,142,147,0.24); }
+
+/* ── State selector dots (inside widget, bottom) ── */
+.w-states {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  z-index: 3;
+}
+.w-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease;
+  opacity: 0.45;
+  border: none;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.w-dot:hover  { opacity: 0.75; transform: scale(1.2); }
+.w-dot.active { opacity: 1;    transform: scale(1.35); box-shadow: 0 0 0 1.5px rgba(255,255,255,0.8); }
+.w-dot[data-s="green"]        { background: #34C759; }
+.w-dot[data-s="yellow-med"]   { background: #FFCC00; }
+.w-dot[data-s="yellow-vital"] { background: #FF9500; }
+.w-dot[data-s="red-med"]      { background: #FF3B30; }
+.w-dot[data-s="red-vital"]    { background: #FF3B30; }
+
+/* ══════════════════════════════════════════════════════════
+   APP ICONS GRID  (Figma: px-26 gap-y-17 justify-between)
+   ══════════════════════════════════════════════════════════ */
+.app-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 26px;
+  gap: 0;
+  row-gap: 17px;
+  width: 402px;
+  flex: 1;
+  align-content: flex-start;
+  padding-top: 0.333px;
+}
+
+.app-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 72px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.app-item:active .app-icon-img { transform: scale(0.88); opacity: 0.85; }
+
+.app-icon-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: cover;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.app-label {
+  font-family: 'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size: 12px;
+  font-weight: 510;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 72px;
+  line-height: normal;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SEARCH  (Figma: h-30 rounded-[100px] px-12 py-7)
+   ══════════════════════════════════════════════════════════ */
+.search-bar {
+  height: 30px;
+  margin: 0 26px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 12px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+
+  background: rgba(0,0,0,0.20);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  /* screen blend to match Figma's mix-blend-screen glass */
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.15);
+}
+.search-icon {
+  font-size: 11.5px;
+  font-weight: 590;
+  color: #fff;
+  line-height: 16px;
+  flex-shrink: 0;
+}
+.search-label {
+  font-family: 'SF Pro Text',-apple-system,sans-serif;
+  font-size: 11.5px;
+  font-weight: 590;
+  color: #fff;
+  letter-spacing: -0.1px;
+  line-height: 16px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DOCK  (Figma: pb-17 pt-20 px-17 / inner pb-19 pt-20 px-19)
+   ══════════════════════════════════════════════════════════ */
+.dock-area {
+  padding: 20px 17px 17px;
+  flex-shrink: 0;
+  width: 402px;
+}
+.dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 19px 19px;
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+
+  background: rgba(0,0,0,0.20);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.16);
+}
+.dock-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.dock-icon:active { transform: scale(0.88); opacity: 0.85; }
+
+/* ── Home indicator ── */
+.home-indicator {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.home-indicator::before {
+  content: '';
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.50);
+}
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ── Screen (clipped) ── -->
+  <div class="screen">
+
+    <!-- Wallpaper -->
+    <img class="wallpaper"
+         src="https://www.figma.com/api/mcp/asset/62dfaf05-770f-4a2b-b63a-31e5536b164c"
+         alt="">
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-time" id="statusTime">9:41</span>
+      <div class="status-icons">
+        <!-- Cellular -->
+        <img src="https://www.figma.com/api/mcp/asset/923a973d-5e80-42d3-ae3e-64d968f68af1"
+             width="19" height="12" alt="">
+        <!-- WiFi -->
+        <img src="https://www.figma.com/api/mcp/asset/5271e999-f0b6-4810-a85a-c8fbf813c05f"
+             width="17" height="12" alt="">
+        <!-- Battery -->
+        <img src="https://www.figma.com/api/mcp/asset/a79f7b9b-575d-4e5c-aeea-2ebe95343301"
+             width="27" height="13" alt="">
+      </div>
+    </div>
+
+    <!-- Widget Frame -->
+    <div class="widget-frame">
+      <div class="widget" id="widget" data-state="green">
+
+        <!-- Header: ♥ Health · time -->
+        <div class="w-header">
+          <div class="w-app-id">
+            <div class="w-app-icon">
+              <svg width="13" height="12" viewBox="0 0 54 49" fill="none">
+                <defs>
+                  <linearGradient id="hg" x1="0" y1="0" x2="54" y2="49" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%"   stop-color="#FF3A5C"/>
+                    <stop offset="100%" stop-color="#FF6B35"/>
+                  </linearGradient>
+                </defs>
+                <path d="M27 46C27 46 3.5 31.2 3.5 17C3.5 9.82 9.3 4 16.5 4C21.2 4 25.3 6.9 27 11.2C28.7 6.9 32.8 4 37.5 4C44.7 4 50.5 9.82 50.5 17C50.5 31.2 27 46 27 46Z" fill="url(#hg)"/>
+                <path d="M18 9C15 11 13 14.5 13 18" stroke="white" stroke-opacity="0.28" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="w-app-name">Health</span>
+          </div>
+          <span class="w-time" id="wTime">9:41 AM</span>
+        </div>
+
+        <!-- Body: icon + label + sublabel -->
+        <div class="w-body">
+          <div class="w-icon" id="wIcon"></div>
+          <p class="w-label"    id="wLabel"></p>
+          <p class="w-sublabel" id="wSub"></p>
+        </div>
+
+        <!-- Action buttons (yellow-med only) -->
+        <div class="w-actions" id="wActions">
+          <button class="w-btn w-btn-taken" id="btnTaken">
+            <svg viewBox="0 0 13 13" fill="none">
+              <path d="M2 7L5 10.5L11 3" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Taken
+          </button>
+          <button class="w-btn w-btn-skip" id="btnSkip">
+            <svg viewBox="0 0 13 13" fill="none">
+              <path d="M3 3L10 10M10 3L3 10" stroke="currentColor" stroke-width="1.85" stroke-linecap="round"/>
+            </svg>
+            Skip
+          </button>
+        </div>
+
+        <!-- State selector dots -->
+        <div class="w-states">
+          <button class="w-dot active" data-s="green"        title="Healthy"         onclick="setState('green')"></button>
+          <button class="w-dot"        data-s="yellow-med"   title="Medication Due"  onclick="setState('yellow-med')"></button>
+          <button class="w-dot"        data-s="yellow-vital" title="Vital Alert"     onclick="setState('yellow-vital')"></button>
+          <button class="w-dot"        data-s="red-med"      title="Overdue Rx"      onclick="setState('red-med')"></button>
+          <button class="w-dot"        data-s="red-vital"    title="Critical Vitals" onclick="setState('red-vital')"></button>
+        </div>
+
+      </div>
+    </div><!-- /widget-frame -->
+
+    <!-- App Icons Grid (16 icons, 4 columns) -->
+    <div class="app-grid">
+      <!-- Row 1 -->
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/3deb0d74-54ab-4764-b208-326ac6c2b9bc" alt="FaceTime">
+        <span class="app-label">FaceTime</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/a2f7096d-4130-4a13-a4ed-1cd523b34c6b" alt="Calendar">
+        <span class="app-label">Calendar</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/53240ef6-3951-4d3d-a95b-3f3f34fa1785" alt="Photos">
+        <span class="app-label">Photos</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/7e030d9a-ea2f-41b4-80b3-7063942c889b" alt="Camera">
+        <span class="app-label">Camera</span>
+      </div>
+      <!-- Row 2 -->
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/3e099eb9-95f5-4031-8a82-61e5cb7dc393" alt="Mail">
+        <span class="app-label">Mail</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/8fef5609-6218-4806-aa96-d87131bec449" alt="Notes">
+        <span class="app-label">Notes</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/22f63eb6-8404-4a8c-99ec-5c40b80f0c0c" alt="Reminders">
+        <span class="app-label">Reminders</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/ba21417c-6c76-4337-b338-85a44717093d" alt="Clock">
+        <span class="app-label">Clock</span>
+      </div>
+      <!-- Row 3 -->
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/bceb00b5-b163-458a-a9aa-6d2df111553e" alt="News">
+        <span class="app-label">News</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/62388e03-8d43-4b46-8ae3-03a12d3acb10" alt="TV">
+        <span class="app-label">TV</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/93ef4bfc-b44c-4fe0-8de3-e095d6927675" alt="Games">
+        <span class="app-label">Games</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/eb53c4fa-c653-4404-ba42-856cab802a90" alt="App Store">
+        <span class="app-label">App Store</span>
+      </div>
+      <!-- Row 4 -->
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/56ee4066-2569-45db-ac0e-84d5f764475c" alt="Maps">
+        <span class="app-label">Maps</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/ede65ca7-bb15-47c5-86d4-6b99cefb8903" alt="Health">
+        <span class="app-label">Health</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/593bc53e-4285-4443-8e4f-516d19f3f8cb" alt="Wallet">
+        <span class="app-label">Wallet</span>
+      </div>
+      <div class="app-item">
+        <img class="app-icon-img" src="https://www.figma.com/api/mcp/asset/eb3533a5-ab57-43cf-947e-3b3152e9bbbe" alt="Settings">
+        <span class="app-label">Settings</span>
+      </div>
+    </div><!-- /app-grid -->
+
+    <!-- Search Bar -->
+    <div class="search-bar" style="margin: 0 26px 0; flex-shrink:0;">
+      <span class="search-icon">&#x1002AB;</span>
+      <span class="search-label">Search</span>
+    </div>
+
+    <!-- Dock -->
+    <div class="dock-area">
+      <div class="dock">
+        <img class="dock-icon" src="https://www.figma.com/api/mcp/asset/e9667eab-9ab8-468b-9c51-c1379b745661" alt="Phone">
+        <img class="dock-icon" src="https://www.figma.com/api/mcp/asset/e337ca3d-1a40-4e8a-b91d-97e3d1bb6474" alt="Safari">
+        <img class="dock-icon" src="https://www.figma.com/api/mcp/asset/26037414-cccd-47e9-a0e8-33a3d4e318a8" alt="Messages">
+        <img class="dock-icon" src="https://www.figma.com/api/mcp/asset/10035d3c-42ec-4c73-870c-099101558a7b" alt="Music">
+      </div>
+    </div>
+
+    <!-- Home Indicator -->
+    <div class="home-indicator"></div>
+
+    <!-- Bezel overlay (iPhone 17 Pro Silver Portrait) -->
+    <img class="bezel"
+         src="https://www.figma.com/api/mcp/asset/5e953d84-1d82-4c25-ad49-6490e89004aa"
+         alt="">
+
+  </div><!-- /screen -->
+</div><!-- /phone -->
+
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   SF SYMBOL SVGs — icon sizes compressed for widget space
+   ════════════════════════════════════════════════════════════ */
+
+function svgCheckmark(color, size=36) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 52 52" fill="none">
+    <defs><radialGradient id="cg" cx="38%" cy="28%" r="62%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient></defs>
+    <circle cx="26" cy="26" r="26" fill="${color}"/>
+    <circle cx="26" cy="26" r="26" fill="url(#cg)"/>
+    <path d="M14.5 27.5L21.5 34.5L37.5 17.5" stroke="white"
+          stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function svgPill(color, size=40) {
+  const h = Math.round(size * 0.50);
+  return `<svg width="${size}" height="${h}" viewBox="0 0 56 28" fill="none">
+    <rect x=".75" y=".75" width="54.5" height="26.5" rx="13.25" fill="${color}"/>
+    <path d="M.75 14C.75 6.68 6.68.75 14 .75H28V27.25H14C6.68 27.25.75 21.32.75 14Z"
+          fill="white" fill-opacity="0.20"/>
+    <line x1="28" y1="1" x2="28" y2="27" stroke="white" stroke-opacity="0.38" stroke-width="1.4"/>
+    <rect x=".75" y=".75" width="54.5" height="26.5" rx="13.25"
+          stroke="rgba(0,0,0,0.08)" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function svgHeart(color, size=38) {
+  return `<svg width="${size}" height="${Math.round(size*0.9)}" viewBox="0 0 54 49" fill="none">
+    <defs><radialGradient id="hgd" cx="38%" cy="28%" r="62%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient></defs>
+    <path d="M27 46C27 46 3.5 31.2 3.5 17C3.5 9.82 9.3 4 16.5 4C21.2 4 25.3 6.9 27 11.2
+             C28.7 6.9 32.8 4 37.5 4C44.7 4 50.5 9.82 50.5 17C50.5 31.2 27 46 27 46Z"
+          fill="${color}"/>
+    <path d="M27 46C27 46 3.5 31.2 3.5 17C3.5 9.82 9.3 4 16.5 4C21.2 4 25.3 6.9 27 11.2
+             C28.7 6.9 32.8 4 37.5 4C44.7 4 50.5 9.82 50.5 17C50.5 31.2 27 46 27 46Z"
+          fill="url(#hgd)"/>
+    <path d="M18 9C15 11 13 14.5 13 18" stroke="white"
+          stroke-opacity="0.28" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   STATES
+   ════════════════════════════════════════════════════════════ */
+const STATES = {
+  green: {
+    icon:        () => svgCheckmark('#34C759', 36),
+    label:       'All Clear',
+    sublabel:    'All vitals normal · No alerts',
+    timeText:    '9:41 AM',
+    timeAlert:   false,
+    labelColor:  '#000',
+    showButtons: false,
+  },
+  'yellow-med': {
+    icon:        () => svgPill('#FFCC00', 36),
+    label:       'Medication Due',
+    sublabel:    'Metformin 500 mg · in 15 min',
+    timeText:    'in 15 min',
+    timeAlert:   false,
+    labelColor:  '#000',
+    showButtons: true,
+  },
+  'yellow-vital': {
+    icon:        () => svgHeart('#FF9500', 36),
+    label:       'Elevated Heart Rate',
+    sublabel:    '128 BPM · Detected just now',
+    timeText:    'Just now',
+    timeAlert:   false,
+    labelColor:  '#000',
+    showButtons: false,
+  },
+  'red-med': {
+    icon:        () => svgPill('#FF3B30', 36),
+    label:       'Medication Overdue',
+    sublabel:    'Metformin · 22 min ago',
+    timeText:    '22 min ago',
+    timeAlert:   true,
+    labelColor:  '#FF3B30',
+    showButtons: false,
+  },
+  'red-vital': {
+    icon:        () => svgHeart('#FF3B30', 36),
+    label:       'Critical Alert',
+    sublabel:    '156 BPM · BP elevated',
+    timeText:    'Now',
+    timeAlert:   true,
+    labelColor:  '#FF3B30',
+    showButtons: false,
+  },
+};
+
+/* ════════════════════════════════════════════════════════════
+   DOM REFS
+   ════════════════════════════════════════════════════════════ */
+const widget   = document.getElementById('widget');
+const wIcon    = document.getElementById('wIcon');
+const wLabel   = document.getElementById('wLabel');
+const wSub     = document.getElementById('wSub');
+const wTime    = document.getElementById('wTime');
+const wActions = document.getElementById('wActions');
+const btnTaken = document.getElementById('btnTaken');
+const btnSkip  = document.getElementById('btnSkip');
+const dots     = document.querySelectorAll('.w-dot');
+
+/* ════════════════════════════════════════════════════════════
+   setState
+   ════════════════════════════════════════════════════════════ */
+function setState(key) {
+  const s = STATES[key];
+  if (!s) return;
+
+  widget.setAttribute('data-state', key);
+
+  /* Icon spring */
+  wIcon.style.transition = 'opacity 0.16s ease, transform 0.16s ease';
+  wIcon.style.opacity    = '0';
+  wIcon.style.transform  = 'scale(0.60)';
+  setTimeout(() => {
+    wIcon.innerHTML = s.icon();
+    wIcon.style.transition = 'opacity 0.26s ease, transform 0.42s cubic-bezier(0.34,1.56,0.64,1)';
+    requestAnimationFrame(() => {
+      wIcon.style.opacity   = '1';
+      wIcon.style.transform = 'scale(1)';
+    });
+  }, 160);
+
+  wLabel.textContent = s.label;
+  wLabel.style.color = s.labelColor;
+  wSub.textContent   = s.sublabel;
+  wTime.textContent  = s.timeText;
+  wTime.className    = 'w-time' + (s.timeAlert ? ' alert' : '');
+  wActions.classList.toggle('show', s.showButtons);
+
+  /* Activate matching dot */
+  dots.forEach(d => d.classList.toggle('active', d.dataset.s === key));
+}
+
+/* ════════════════════════════════════════════════════════════
+   ACTION BUTTONS
+   ════════════════════════════════════════════════════════════ */
+btnTaken.addEventListener('click', () => {
+  btnTaken.style.background = 'rgba(52,199,89,0.50)';
+  btnTaken.style.transform  = 'scale(0.93)';
+  setTimeout(() => { btnTaken.style.background = ''; btnTaken.style.transform = ''; setState('green'); }, 260);
+});
+btnSkip.addEventListener('click', () => {
+  btnSkip.style.background = 'rgba(142,142,147,0.32)';
+  btnSkip.style.transform  = 'scale(0.93)';
+  setTimeout(() => { btnSkip.style.background = ''; btnSkip.style.transform = ''; setState('green'); }, 260);
+});
+
+/* ════════════════════════════════════════════════════════════
+   KEYBOARD — arrow keys cycle states
+   ════════════════════════════════════════════════════════════ */
+const stateOrder = ['green','yellow-med','yellow-vital','red-med','red-vital'];
+let idx = 0;
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    idx = (idx + 1) % stateOrder.length;
+    setState(stateOrder[idx]);
+  }
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    idx = (idx - 1 + stateOrder.length) % stateOrder.length;
+    setState(stateOrder[idx]);
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   LIVE CLOCK
+   ════════════════════════════════════════════════════════════ */
+function tick() {
+  const d = new Date();
+  const h = d.getHours(), m = d.getMinutes();
+  document.getElementById('statusTime').textContent =
+    `${h % 12 || 12}:${String(m).padStart(2,'0')}`;
+}
+tick();
+setInterval(tick, 15000);
+
+/* ════════════════════════════════════════════════════════════
+   BOOT
+   ════════════════════════════════════════════════════════════ */
+(function boot() {
+  wIcon.style.transition = 'none';
+  wIcon.style.opacity    = '1';
+  wIcon.style.transform  = 'scale(1)';
+  setState('green');
+})();
+</script>
+</body>
+</html>

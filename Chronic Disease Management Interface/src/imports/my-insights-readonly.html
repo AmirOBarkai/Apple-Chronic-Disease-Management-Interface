@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>My Insights</title>
+<style>
+
+/* ═══ RESET ════════════════════════════════════════ */
+*,*::before,*::after{
+  box-sizing:border-box; margin:0; padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ═══ APPLE DESIGN TOKENS ══════════════════════════ */
+:root{
+  --bg:      #f2f2f7;
+  --card:    #ffffff;
+  --l1:      #000000;
+  --l2:      rgba(60,60,67,.60);
+  --l3:      rgba(60,60,67,.30);
+  --l4:      rgba(60,60,67,.18);
+  --sep:     rgba(60,60,67,.18);
+  --fill2:   rgba(120,120,128,.16);
+  --fill3:   rgba(120,120,128,.12);
+
+  --blue:    #007aff;
+  --teal:    #30b0c7;
+  --indigo:  #5856d6;
+  --orange:  #ff9500;
+  --green:   #34c759;
+  --red:     #ff3b30;
+  --purple:  #af52de;
+
+  --blue-t:   rgba(0,122,255,.10);
+  --teal-t:   rgba(48,176,199,.12);
+  --indigo-t: rgba(88,86,214,.10);
+  --orange-t: rgba(255,149,0,.10);
+  --purple-t: rgba(175,82,222,.10);
+
+  --r-xl:   20px;
+  --r-lg:   16px;
+  --spring: cubic-bezier(.4,0,.2,1);
+}
+
+/* ═══ BODY ══════════════════════════════════════════ */
+body{
+  background: #dcdce1;
+  font-family: -apple-system,'SF Pro Text','Helvetica Neue',sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 40px 0 60px;
+}
+
+/* ═══ PHONE SHELL ═══════════════════════════════════ */
+.phone{
+  width: 390px;
+  height: 844px;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  border-radius: 52px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.10),
+    0 24px 60px rgba(0,0,0,.22),
+    0 48px 100px rgba(0,0,0,.14);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══ STATUS BAR ════════════════════════════════════ */
+.sb{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 28px 0;
+  height:52px; flex-shrink:0;
+}
+.sb-t{ font-size:15px; font-weight:600; letter-spacing:-.3px; color:var(--l1); }
+.sb-icons{ display:flex; align-items:center; gap:6px; }
+
+/* ═══ STICKY HEADER ═════════════════════════════════ */
+.ic-header{
+  flex-shrink:0;
+  background:var(--bg);
+  border-bottom:.5px solid var(--sep);
+  position:relative; z-index:10;
+}
+
+/* Nav row — back · title (centred) */
+.ic-nav{
+  display:flex; align-items:center;
+  height:44px; padding:0 16px 0 4px;
+  position:relative;
+}
+.ic-title{
+  position:absolute; left:50%; transform:translateX(-50%);
+  font-size:17px; font-weight:600;
+  letter-spacing:-.43px; color:var(--l1);
+  pointer-events:none; white-space:nowrap;
+}
+.back{
+  display:flex; align-items:center; gap:2px;
+  padding:8px 8px 8px 4px;
+  background:none; border:none; font-family:inherit;
+  font-size:17px; font-weight:400; color:var(--blue);
+  cursor:pointer; border-radius:8px;
+  transition:opacity .12s; letter-spacing:-.43px;
+}
+.back:active{ opacity:.4; }
+
+/* Privacy line */
+.ic-priv{
+  display:flex; align-items:center; gap:5px;
+  padding:5px 20px 0;
+  font-size:11px; font-weight:500;
+  color:var(--l3); letter-spacing:.06px;
+}
+.ic-priv svg{ opacity:.45; }
+
+/* Date row */
+.ic-date-row{ padding:8px 20px 4px; }
+.ic-date{
+  font-size:22px; font-weight:700;
+  letter-spacing:-.26px; color:var(--l1); line-height:1.18;
+  transition:opacity .2s;
+}
+.ic-date-sub{
+  font-size:12px; font-weight:400;
+  color:var(--l2); letter-spacing:-.1px; margin-top:2px;
+}
+
+/* Page dots */
+.ic-dots{
+  display:flex; align-items:center; justify-content:center;
+  gap:5px; padding:6px 0 10px;
+}
+.dot{
+  width:5.5px; height:5.5px; border-radius:50%;
+  background:var(--l4);
+  transition:background .2s, transform .22s;
+}
+.dot.on{ background:var(--indigo); transform:scale(1.35); }
+
+/* ═══ CAROUSEL ══════════════════════════════════════ */
+.carousel{
+  flex:1;
+  display:flex;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  scroll-behavior:auto;
+}
+.carousel::-webkit-scrollbar{ display:none; }
+
+.day-pane{
+  width:100%; min-width:100%; flex-shrink:0;
+  scroll-snap-align:start;
+  display:flex; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding:14px 0 28px;
+}
+
+/* ═══ INSIGHT CARDS — READ-ONLY ══════════════════════
+   No action buttons. No stamps. Just content.
+═══════════════════════════════════════════════════ */
+.card{
+  margin:0 16px 10px;
+  background:var(--card);
+  border-radius:var(--r-xl);
+  overflow:hidden;
+}
+
+/* Content area */
+.card-top{
+  display:flex; align-items:flex-start;
+  gap:12px; padding:15px 16px 16px;
+}
+
+/* Icon container */
+.card-ico{
+  width:38px; height:38px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:1px;
+}
+.c-teal   { background:var(--teal-t); }
+.c-blue   { background:var(--blue-t); }
+.c-indigo { background:var(--indigo-t); }
+.c-orange { background:var(--orange-t); }
+.c-purple { background:var(--purple-t); }
+
+.card-body{ flex:1; min-width:0; }
+
+/* Category eyebrow */
+.card-cat{
+  font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.55px;
+  margin-bottom:4px;
+}
+.c-teal-txt   { color:var(--teal); }
+.c-blue-txt   { color:var(--blue); }
+.c-indigo-txt { color:var(--indigo); }
+.c-orange-txt { color:var(--orange); }
+.c-purple-txt { color:var(--purple); }
+
+/* Headline */
+.card-head{
+  font-size:15px; font-weight:700;
+  color:var(--l1); letter-spacing:-.3px;
+  line-height:1.28; margin-bottom:4px;
+}
+
+/* Supporting detail */
+.card-detail{
+  font-size:12px; font-weight:400;
+  color:var(--l2); line-height:1.5; letter-spacing:-.05px;
+}
+
+/* ═══ SOURCE CHIP ════════════════════════════════════
+   Small read-only data source tag — replaces actions
+═══════════════════════════════════════════════════ */
+.card-source{
+  display:flex; align-items:center; gap:6px;
+  padding:9px 16px 12px;
+  border-top:.5px solid var(--sep);
+}
+.source-dot{
+  width:6px; height:6px; border-radius:50%; flex-shrink:0;
+}
+.source-txt{
+  font-size:11px; font-weight:500;
+  color:var(--l3); letter-spacing:.02px;
+}
+
+/* ═══ FOOTER ════════════════════════════════════════ */
+.ic-footer{
+  flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  padding:8px 20px 12px;
+  font-size:11px; font-weight:500;
+  color:var(--l3); letter-spacing:.06px;
+  border-top:.5px solid var(--sep);
+}
+.ic-footer svg{ opacity:.45; flex-shrink:0; }
+
+/* ═══ ENTRANCE ANIMATION ════════════════════════════ */
+@keyframes fu{
+  from{opacity:0; transform:translateY(5px);}
+  to  {opacity:1; transform:translateY(0);}
+}
+.f1{animation:fu .22s var(--spring) both .04s;}
+.f2{animation:fu .22s var(--spring) both .09s;}
+.f3{animation:fu .22s var(--spring) both .14s;}
+.f4{animation:fu .22s var(--spring) both .19s;}
+.f5{animation:fu .22s var(--spring) both .24s;}
+
+/* ═══ MOBILE: edge-to-edge ══════════════════════════ */
+@media(max-width:430px){
+  body{padding:0;background:var(--bg);}
+  .phone{
+    width:100vw!important;
+    height:100dvh!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ── Status Bar ── -->
+  <div class="sb">
+    <span class="sb-t" id="sb-time">9:41</span>
+    <div class="sb-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="#000"><rect x="0" y="7" width="3" height="5" rx=".8"/><rect x="4.5" y="5" width="3" height="7" rx=".8"/><rect x="9" y="2.5" width="3" height="9.5" rx=".8"/><rect x="13.5" y="0" width="3" height="12" rx=".8" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#000"><path d="M8 9.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/><path d="M4.2 6.7a5.4 5.4 0 0 1 7.6 0l-1.3 1.3a3.6 3.6 0 0 0-5 0Z"/><path d="M1 3.5a9.5 9.5 0 0 1 14 0L13.7 4.8a7.8 7.8 0 0 0-11.4 0Z" opacity=".5"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="2.5" stroke="#000" stroke-width="1" fill="none"/><rect x="1.5" y="2.5" width="16" height="7" rx="1.5" fill="#000"/><path d="M23.5 4.5v3a1.5 1.5 0 0 0 0-3Z" fill="#000" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <!-- ── Sticky Header ── -->
+  <div class="ic-header f1">
+
+    <div class="ic-nav">
+      <button class="back" onclick="history.back()">
+        <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7l6 6" stroke="#007aff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Home
+      </button>
+      <span class="ic-title">My Insights</span>
+    </div>
+
+    <div class="ic-priv">
+      <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><rect x="1" y="5" width="8" height="7" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3 5V3.5a2 2 0 1 1 4 0V5" stroke="currentColor" stroke-width="1.1"/></svg>
+      Your health data stays on this iPhone
+    </div>
+
+    <div class="ic-date-row">
+      <div class="ic-date" id="ic-date">Thursday, Apr 30</div>
+      <div class="ic-date-sub" id="ic-date-sub">3 insights today</div>
+    </div>
+
+    <div class="ic-dots" id="ic-dots">
+      <div class="dot on" id="dot-0"></div>
+      <div class="dot"    id="dot-1"></div>
+      <div class="dot"    id="dot-2"></div>
+    </div>
+
+  </div><!-- /ic-header -->
+
+  <!-- ══════════════════════════════════════════
+       CAROUSEL  — Day 0 = Apr 30 (current)
+                   Day 1 = Apr 29
+                   Day 2 = Apr 28
+  ══════════════════════════════════════════ -->
+  <div class="carousel" id="carousel">
+
+    <!-- ── DAY 0 · Thursday Apr 30 ── -->
+    <div class="day-pane" id="pane-0">
+
+      <!-- Card A · Heart Rate -->
+      <div class="card f2">
+        <div class="card-top">
+          <div class="card-ico c-teal">
+            <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+              <path d="M10 16S2 10.5 2 5.5a4 4 0 0 1 8-.5 4 4 0 0 1 8 .5C18 10.5 10 16 10 16Z" stroke="#30b0c7" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M4.5 9h2l2-3.5 2.5 7L13 9h2.5" stroke="#30b0c7" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-teal-txt">Heart Rate</div>
+            <div class="card-head">Rest now.</div>
+            <div class="card-detail">Low heart rate detected. Avoid exertion for the next 5 minutes to allow your cardiovascular system to stabilise.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--teal);"></div>
+          <span class="source-txt">Apple Watch · Heart rate 52 bpm · 9:38 AM</span>
+        </div>
+      </div>
+
+      <!-- Card B · Breathing -->
+      <div class="card f3">
+        <div class="card-top">
+          <div class="card-ico c-blue">
+            <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+              <path d="M10 16S2 10.5 2 5.5a4 4 0 0 1 8-.5 4 4 0 0 1 8 .5C18 10.5 10 16 10 16Z" stroke="#007aff" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M10 5v4" stroke="#007aff" stroke-width="1.7" stroke-linecap="round"/>
+              <circle cx="10" cy="11.5" r="1" fill="#007aff"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-blue-txt">Stress & Hydration</div>
+            <div class="card-head">Drink water.</div>
+            <div class="card-detail">Take 3 minutes for deep breathing to lower stress and blood pressure. Pair with a glass of water to support blood volume.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--blue);"></div>
+          <span class="source-txt">Apple Watch · Resting HR elevated · Today</span>
+        </div>
+      </div>
+
+      <!-- Card C · Sleep -->
+      <div class="card f4">
+        <div class="card-top">
+          <div class="card-ico c-indigo">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M13.5 3.5A6.5 6.5 0 1 0 14.5 13 5 5 0 0 1 13.5 3.5Z" stroke="#5856d6" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-indigo-txt">Sleep</div>
+            <div class="card-head">Enable Night Shift.</div>
+            <div class="card-detail">Reducing blue-light exposure after sunset supports melatonin production and improves sleep quality.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--indigo);"></div>
+          <span class="source-txt">iPhone · Screen time after 10 PM detected</span>
+        </div>
+      </div>
+
+    </div><!-- /pane-0 -->
+
+    <!-- ── DAY 1 · Wednesday Apr 29 ── -->
+    <div class="day-pane" id="pane-1">
+
+      <!-- Card D · Activity -->
+      <div class="card f2">
+        <div class="card-top">
+          <div class="card-ico c-indigo">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="4" r="2" stroke="#5856d6" stroke-width="1.4"/>
+              <path d="M10 7l-2.5 4.5L9.5 13 8 18" stroke="#5856d6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10 7l2 4.5L10.5 13 12 18" stroke="#5856d6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-indigo-txt">Activity</div>
+            <div class="card-head">Go for a walk.</div>
+            <div class="card-detail">A 15-minute walk would have reached your daily step goal and expanded blood vessels, reducing unnecessary strain on your heart.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--indigo);"></div>
+          <span class="source-txt">Apple Watch · Steps: 4,210 / 8,000 · Apr 29</span>
+        </div>
+      </div>
+
+      <!-- Card E · Screen Time -->
+      <div class="card f3">
+        <div class="card-top">
+          <div class="card-ico c-orange">
+            <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+              <rect x="1" y="2" width="18" height="11" rx="2.5" stroke="#ff9500" stroke-width="1.4"/>
+              <path d="M6.5 16h7M10 13v3" stroke="#ff9500" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M10 5.5v3.5" stroke="#ff9500" stroke-width="1.7" stroke-linecap="round"/>
+              <circle cx="10" cy="11" r="1" fill="#ff9500"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-orange-txt">Screen Time</div>
+            <div class="card-head">Leg stretches.</div>
+            <div class="card-detail">Putting the phone away and stretching for 2 minutes improves circulation and reduces the metabolic impact of prolonged sitting.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--orange);"></div>
+          <span class="source-txt">iPhone · Screen time 3h 40m · Apr 29</span>
+        </div>
+      </div>
+
+    </div><!-- /pane-1 -->
+
+    <!-- ── DAY 2 · Tuesday Apr 28 ── -->
+    <div class="day-pane" id="pane-2">
+
+      <!-- Card F · Sedentary -->
+      <div class="card f2">
+        <div class="card-top">
+          <div class="card-ico c-orange">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="11" width="14" height="6" rx="2.5" stroke="#ff9500" stroke-width="1.4"/>
+              <path d="M6.5 11V8a3.5 3.5 0 0 1 7 0v3" stroke="#ff9500" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M10 13.5v2" stroke="#ff9500" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-orange-txt">Sedentary</div>
+            <div class="card-head">Stand up.</div>
+            <div class="card-detail">1 minute of standing balances blood pressure and counteracts the cardiovascular effects of sitting for extended periods.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--orange);"></div>
+          <span class="source-txt">Apple Watch · Sedentary 62 min · Apr 28</span>
+        </div>
+      </div>
+
+      <!-- Card G · Environment -->
+      <div class="card f3">
+        <div class="card-top">
+          <div class="card-ico c-blue">
+            <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+              <path d="M8 3L5 6.5H2v5h3l3 3.5V3Z" stroke="#007aff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13 6a4 4 0 0 1 0 6" stroke="#007aff" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M16 3a8 8 0 0 1 0 12" stroke="#007aff" stroke-width="1.4" stroke-linecap="round" opacity=".4"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-blue-txt">Environment</div>
+            <div class="card-head">Quiet space.</div>
+            <div class="card-detail">Reducing ambient noise lowers the sympathetic nervous system response, decreasing heart strain and cortisol output.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--blue);"></div>
+          <span class="source-txt">Apple Watch · Noise exposure 82 dB · Apr 28</span>
+        </div>
+      </div>
+
+      <!-- Card H · Sleep -->
+      <div class="card f4">
+        <div class="card-top">
+          <div class="card-ico c-purple">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M13.5 3.5A6.5 6.5 0 1 0 14.5 13 5 5 0 0 1 13.5 3.5Z" stroke="#af52de" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M7 9h4" stroke="#af52de" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat c-purple-txt">Sleep</div>
+            <div class="card-head">Earlier bedtime.</div>
+            <div class="card-detail">Consistent sleep timing is the single highest-leverage habit for tomorrow's resting blood pressure and HRV baseline.</div>
+          </div>
+        </div>
+        <div class="card-source">
+          <div class="source-dot" style="background:var(--purple);"></div>
+          <span class="source-txt">Apple Watch · Sleep 5.8 hrs · HRV 26ms · Apr 28</span>
+        </div>
+      </div>
+
+    </div><!-- /pane-2 -->
+
+  </div><!-- /carousel -->
+
+  <!-- ── Privacy Footer ── -->
+  <div class="ic-footer">
+    <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><rect x="1" y="5" width="8" height="7" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3 5V3.5a2 2 0 1 1 4 0V5" stroke="currentColor" stroke-width="1.1"/></svg>
+    Your health data stays on this iPhone
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+/* ── Live clock ─────────────────────────── */
+(function tick(){
+  var now=new Date(),h=now.getHours(),m=now.getMinutes();
+  var t=(h%12||12)+':'+(m<10?'0':'')+m;
+  document.getElementById('sb-time').textContent=t;
+  setTimeout(tick,15000);
+})();
+
+/* ── Day metadata ───────────────────────── */
+var DAYS=[
+  { date:'Thursday, Apr 30', sub:'3 insights today' },
+  { date:'Wednesday, Apr 29', sub:'2 insights · yesterday' },
+  { date:'Tuesday, Apr 28',   sub:'3 insights · 2 days ago' }
+];
+
+/* ── Dot + date sync on carousel scroll ─── */
+var currentDay=0;
+var car=document.getElementById('carousel');
+
+function setDay(idx,scroll){
+  if(idx<0||idx>=DAYS.length) return;
+  currentDay=idx;
+  DAYS.forEach(function(_,i){
+    var d=document.getElementById('dot-'+i);
+    if(d) d.classList.toggle('on',i===idx);
+  });
+  var dateEl=document.getElementById('ic-date');
+  var subEl =document.getElementById('ic-date-sub');
+  if(dateEl) dateEl.textContent=DAYS[idx].date;
+  if(subEl)  subEl.textContent =DAYS[idx].sub;
+  if(scroll&&car){
+    car.scrollTo({left:idx*car.clientWidth,behavior:'smooth'});
+  }
+}
+
+/* Dot tap → navigate */
+for(var i=0;i<DAYS.length;i++){
+  (function(idx){
+    var d=document.getElementById('dot-'+idx);
+    if(d) d.addEventListener('click',function(){ setDay(idx,true); });
+  })(i);
+}
+
+/* Carousel scroll → update dots */
+if(car){
+  var ticking=false;
+  car.addEventListener('scroll',function(){
+    if(!ticking){
+      requestAnimationFrame(function(){
+        var idx=Math.round(car.scrollLeft/car.clientWidth);
+        if(idx!==currentDay) setDay(idx,false);
+        ticking=false;
+      });
+      ticking=true;
+    }
+  },{passive:true});
+}
+</script>
+</body>
+</html>

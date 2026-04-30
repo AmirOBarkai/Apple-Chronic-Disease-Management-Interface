@@ -1,0 +1,116 @@
+You are designing a **demo-only document understanding system** for our iPhone hypertension assistant.
+
+We provide 5 real medical documents as input data sources only (do NOT show them directly in the UI):
+
+1) ABPM-Sample-Report.pdf
+2) Hypertension-letter.pdf
+3) bloodpressurereport-12-24-12-2-53-02pm-121224075536-phpapp02-1.pdf
+4) Hospital-discharge-combined-scenario-and-example-discharge.pdf
+5) Discharge-Instructions-for-High-Blood-Pressure-Hypertension-_-UMass-Memorial-Health.pdf
+
+Goal:
+Build a **closed, backstage demo system** where these 5 documents live only in an internal “database”, and the user at the booth can:
+- take a photo of one of the printed documents
+- have the system “recognize” which document it is
+- instantly see a clear explanation of that document:
+  - short explanation
+  - long explanation
+  - key terms with simple definitions
+  - suggested questions to ask their doctor
+  - ability to save that explanation
+
+CRITICAL PRIVACY / UX RULE:
+- The original PDF content must NEVER be shown directly in the app or as a visible file.
+- The user should only see the derived explanations and structured summaries.
+- Inside the prototype, treat the 5 documents as internal data records, not as files in Apple Files / Apple Health / Apple Records.
+
+Implementation requirements:
+
+1. Internal document records (database-like config)
+Create an internal config object for 5 document IDs:
+
+- doc_01_abpm_report          → based on ABPM-Sample-Report.pdf
+- doc_02_hypertension_letter  → based on Hypertension-letter.pdf
+- doc_03_bp_trend_report      → based on bloodpressurereport-*.pdf
+- doc_04_hospital_discharge   → based on Hospital-discharge-*.pdf
+- doc_05_discharge_instructions_htn → based on Discharge-Instructions-for-High-Blood-Pressure-*.pdf
+
+For each document id, derive and store:
+- title: a short, user-friendly name of the document
+- short_summary: 2–3 lines explaining “what this document is about” in plain language
+- long_summary: a longer explanation (1–3 short paragraphs) explaining:
+  - why this document was created
+  - what the main findings or instructions are
+  - what it means for the patient’s hypertension management
+- key_terms: 3–7 important medical terms from the document, each with:
+  - term (e.g. “systolic blood pressure”, “ambulatory monitoring”, “target range”)
+  - simple_definition in everyday language
+- doctor_questions: 3–5 concrete questions the patient could ask their doctor about this document
+- safety_note: a short disclaimer making it clear this is an informational explanation, not a diagnosis or treatment decision
+
+Important:
+- keep ALL explanations hypertension-focused and patient-friendly
+- do NOT copy full sentences from the PDFs; instead, paraphrase and summarize
+- remove or ignore any personally identifying details that might exist in the example PDFs
+
+2. No visible files / no Apple Records exposure
+- The user must never see:
+  - the file names
+  - the raw PDF pages
+  - a Files picker, or any Apple Health “Records” file list.
+- Everything should feel like:
+  “You scanned a document. Here is what it means for you.”
+- The 5 documents should exist only as internal data records (doc_01…doc_05), ready to be matched from a scan.
+
+3. Scan → recognize → explain flow (demo logic)
+Design the flow as if used at a physical booth with printed copies of these 5 documents:
+
+Step 1 – Scan a document
+- User taps “Understand a medical document”.
+- They see options like:
+  - “Scan a printed document”
+  - “Choose a demo document” (for backup).
+- When they choose “Scan”, show a simple camera/mock camera screen.
+
+Step 2 – Recognition (behind the scenes)
+- For demo purposes, assume the system can recognize which of the 5 documents is being scanned.
+- Internally this means: map the scan to doc_01…doc_05.
+- Do NOT show any UI that exposes the original PDF or any file picker.
+
+Step 3 – Processing state
+- After capture, show a short state such as:
+  “Reading your document…” with a simple progress indicator.
+- 1–2 seconds is enough in the prototype.
+
+Step 4 – Explanation screen (core of the demo)
+- Show a structured explanation screen populated from the matching doc_xx record:
+  - document title (from title)
+  - “Short explanation” section (from short_summary)
+  - “In more detail” section (from long_summary)
+  - “Key terms in this document” list (from key_terms)
+  - “Questions to ask your doctor” section (from doctor_questions)
+  - a short “Important” / “Note” section (from safety_note)
+- Add a primary button “Save this explanation” to simulate saving it locally for later.
+
+Important UX constraints:
+- All explanations must be concise, readable, and written at a layperson level.
+- Focus on: “What is this document?” and “What does it mean for my high blood pressure?”
+- Avoid making treatment recommendations. Focus on understanding and preparing for a doctor visit.
+
+4. Saving explanations (demo-only)
+- Implement a simple “Save” state:
+  - When the user taps “Save this explanation”, show a confirmation:
+    “Saved in My Documents → Explanations”.
+- No need for real storage — it’s enough to simulate that the explanation can be revisited later from a “Saved Summaries” section.
+
+5. Overall constraints
+- This is a **controlled 5-document demo system**, not a generic OCR/LLM feature.
+- The 5 PDFs are only used as ground truth for generating internal summaries and content.
+- At no point in the prototype should the user see the PDFs, file names, or any Files/Records UI.
+- Everything they see is:
+  - “Scan” → “Reading your document…” → “Plain-language explanation of your hypertension document”.
+
+Output:
+- Build the full configuration (all fields for doc_01–doc_05).
+- Then describe the key screens and states needed for the flow.
+- Ensure the tone and design feel native to an Apple Health-style hypertension assistant.

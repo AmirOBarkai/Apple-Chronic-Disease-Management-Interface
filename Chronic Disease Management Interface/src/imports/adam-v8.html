@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=390, initial-scale=1.0"/>
+<title>Vitals — v8</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --sys-bg:         #f2f2f7;
+  --card:           #ffffff;
+  --label-primary:  #000000;
+  --label-secondary: #848484; /* Secondary — Apple Health exact */
+  --label-tertiary:  #848484;
+  --sep:            #e6e6e6;
+  --fill-secondary: rgba(120,120,128,0.16);
+  --ios-blue:       #007aff;
+  --ios-teal:       #30b0c7;
+  --ios-indigo:     #5856d6;
+  --ios-orange:     #ff9500;
+  --ios-green:      #34c759;
+  --ios-red:        #ff3b30;
+  --blue-soft:      rgba(0,122,255,0.09);
+  --teal-soft:      rgba(48,176,199,0.10);
+  --indigo-soft:    rgba(88,86,214,0.09);
+  --orange-soft:    rgba(255,149,0,0.09);
+  --r-lg:           16px;
+  --r-xl:           20px;
+}
+
+body{
+  background: #e5e5ea;
+  font-family: -apple-system, 'SF Pro Text', 'Inter', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 40px 0 60px;
+}
+
+.phone{
+  width: 390px;
+  height: 844px;
+  background: var(--sys-bg);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Status bar ──────────────────────────────── */
+.sb{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px 0;
+  height: 52px;
+  flex-shrink: 0;
+}
+.sb-t{ font-size:15px; font-weight:600; letter-spacing:-0.3px; color:var(--label-primary); }
+.sb-i{ display:flex; align-items:center; gap:6px; }
+.sb-i svg{ fill:var(--label-primary); display:block; }
+
+/* ── Privacy line — fixed at top ────────────── */
+.privacy-bar{
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 20px 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label-tertiary);
+  letter-spacing: 0.06px;
+  flex-shrink: 0;
+}
+.privacy-bar svg{ opacity:0.5; flex-shrink:0; }
+
+/* ── Scroll area ─────────────────────────────── */
+.scroll{
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 32px;
+}
+
+/* ── Greeting ────────────────────────────────── */
+.greeting{
+  padding: 8px 20px 14px;
+}
+.greeting-title{
+  font-size: 34px;           /* Apple Large Title */
+  font-weight: 700;
+  letter-spacing: 0.37px;
+  color: var(--label-primary);
+  line-height: 1.1;
+}
+
+/* ── Stacked blocks ──────────────────────────── */
+.blocks{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+/* Every block: same height, vertical layout — title top, content bottom */
+.block{
+  background: var(--card);
+  border-radius: 26px;
+  height: 134px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .14s cubic-bezier(.4,0,.2,1), opacity .14s;
+  flex-shrink: 0;
+}
+.block:active{ transform:scale(0.977); opacity:0.88; }
+
+/* Top row: icon + title + chevron */
+.block-top{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: auto;
+}
+.block-sym{
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.block-sym svg{ display:block; }
+.block-name{
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.24px;
+  line-height: 1.2;
+  flex: 1;
+}
+
+/* Bottom content area */
+.block-bottom{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Big data number */
+.block-value{
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--label-primary);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.block-value-unit{
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--label-secondary);
+  letter-spacing: -0.08px;
+}
+.block-sublabel{
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--label-secondary);
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+/* Insight quote text */
+.block-quote{
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--label-primary);
+  letter-spacing: -0.08px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Medication rows inside block */
+.med-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.med-row + .med-row{
+  padding-top: 4px;
+  margin-top: 4px;
+  border-top: 0.5px solid var(--sep);
+}
+.med-row-name{
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-primary);
+  letter-spacing: -0.08px;
+  flex: 1;
+}
+.med-row-dose{
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--label-secondary);
+  margin-top: 1px;
+}
+.med-btns-mini{
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.mbtn{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .12s, opacity .12s;
+  flex-shrink: 0;
+}
+.mbtn:active{ transform:scale(0.85); }
+.mbtn-x{ background:rgba(235,75,98,0.10); }
+.mbtn-v{ background:rgba(103,206,103,0.15); }
+.mbtn.done-v{ background:#67ce67; }
+.mbtn.done-x{ background:#eb4b62; }
+.mbtn svg{ display:block; }
+
+/* Mini bar chart (BP block) */
+.chart{
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 28px;
+}
+.bar{
+  width: 6px;
+  border-radius: 3px 3px 0 0;
+  background: rgba(255,59,48,0.3);
+  opacity: 0.25;
+  transition: height .3s ease;
+}
+.bar.active{ opacity:1; background: var(--ios-red) !important; }
+
+/* Colour accents */
+.c-blue   { color: var(--ios-blue); }
+.c-teal   { color: var(--ios-teal); }
+.c-indigo { color: var(--ios-indigo); }
+.c-orange { color: var(--ios-orange); }
+.c-red    { color: var(--ios-red); }
+
+.sym-blue   .block-sym{ background:var(--blue-soft); }
+.sym-teal   .block-sym{ background:var(--teal-soft); }
+.sym-indigo .block-sym{ background:var(--indigo-soft); }
+.sym-orange .block-sym{ background:var(--orange-soft); }
+.sym-red   .block-sym{ background:rgba(255,59,48,0.09); }
+.sym-gray  .block-sym{ background:rgba(142,142,147,0.12); }
+
+/* chevron */
+.block-chev{
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.25;
+}
+
+/* ── Fade-in animations ───────────────────────── */
+@keyframes fu{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.f1{animation:fu .26s cubic-bezier(.4,0,.2,1) both .04s;}
+.f2{animation:fu .26s cubic-bezier(.4,0,.2,1) both .08s;}
+.f3{animation:fu .26s cubic-bezier(.4,0,.2,1) both .13s;}
+.f4{animation:fu .26s cubic-bezier(.4,0,.2,1) both .18s;}
+.f5{animation:fu .26s cubic-bezier(.4,0,.2,1) both .23s;}
+.f6{animation:fu .26s cubic-bezier(.4,0,.2,1) both .28s;}
+
+/* ── Medication sheet (unchanged from v3) ──── */
+.med-backdrop{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  backdrop-filter:blur(0px);
+  -webkit-backdrop-filter:blur(0px);
+  z-index:200;pointer-events:none;
+  transition:background .3s ease,backdrop-filter .3s ease;
+}
+.med-backdrop.open{
+  background:rgba(0,0,0,0.25);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  pointer-events:all;
+}
+.med-sheet{
+  position:absolute;left:0;right:0;bottom:0;
+  background:var(--card);
+  border-radius:38px 38px 0 0;
+  z-index:201;pointer-events:none;
+  transform:translateY(100%);
+  transition:transform .38s cubic-bezier(.4,0,.2,1);
+  padding-bottom:48px;
+}
+.med-sheet.open{transform:translateY(0);pointer-events:all;}
+.grabber{width:36px;height:5px;background:#e6e6e6;border-radius:2.5px;margin:10px auto 0;}
+.med-header{padding:20px 20px 0;}
+.med-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.06px;text-transform:uppercase;color:var(--ios-teal);margin-bottom:4px;}
+.med-title{font-size:22px;font-weight:700;letter-spacing:-0.26px;color:var(--label-primary);line-height:1.18;}
+.med-subtitle{font-size:15px;font-weight:400;color:var(--label-secondary);letter-spacing:-0.24px;margin-top:4px;}
+.med-list-full{margin:16px 16px 0;display:flex;flex-direction:column;gap:8px;}
+.med-item{background:var(--sys-bg);border-radius:var(--r-lg);padding:14px 14px 14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:opacity .2s;}
+.med-item.resolved{opacity:0.45;}
+.med-item.resolved .med-btns-full{pointer-events:none;}
+.med-info{flex:1;}
+.med-name{font-size:16px;font-weight:600;color:var(--label-primary);letter-spacing:-0.32px;}
+.med-dose{font-size:12px;font-weight:400;color:var(--label-secondary);margin-top:2px;}
+.med-note{font-size:11px;font-weight:400;color:var(--label-tertiary);margin-top:2px;}
+.med-btns-full{display:flex;gap:8px;flex-shrink:0;}
+.mfbtn{width:44px;height:44px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s,opacity .12s;flex-shrink:0;}
+.mfbtn:active{transform:scale(0.87);}
+.mfbtn-x{background:rgba(255,59,48,0.12);}
+.mfbtn-v{background:rgba(52,199,89,0.14);}
+.mfbtn.done-v{background:var(--ios-green);}
+.mfbtn.done-x{background:var(--ios-red);}
+.done-card{display:none;margin:12px 16px 0;background:rgba(52,199,89,0.12);border-radius:var(--r-lg);padding:13px 16px;align-items:center;gap:12px;}
+.done-card.show{display:flex;}
+.done-ico{width:32px;height:32px;background:var(--ios-green);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.done-txt{font-size:15px;font-weight:500;color:var(--ios-green);letter-spacing:-0.24px;line-height:1.4;}
+.sheet-done{margin:14px 16px 0;width:calc(100% - 32px);padding:14px;background:var(--fill-secondary);border:none;border-radius:var(--r-lg);font-family:inherit;font-size:17px;font-weight:400;color:var(--ios-blue);letter-spacing:-0.43px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .12s;}
+.sheet-done:active{opacity:0.6;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="sb">
+    <span class="sb-t">9:41</span>
+    <div class="sb-i">
+      <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="7" width="3" height="5" rx=".8"/><rect x="4.5" y="5" width="3" height="7" rx=".8"/><rect x="9" y="2.5" width="3" height="9.5" rx=".8"/><rect x="13.5" y="0" width="3" height="12" rx=".8" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 9.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/><path d="M4.2 6.7a5.4 5.4 0 0 1 7.6 0l-1.3 1.3a3.6 3.6 0 0 0-5 0Z"/><path d="M1 3.5a9.5 9.5 0 0 1 14 0L13.7 4.8a7.8 7.8 0 0 0-11.4 0Z" opacity=".5"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="2.5" stroke="#000" stroke-width="1" fill="none"/><rect x="1.5" y="2.5" width="16" height="7" rx="1.5" fill="#000"/><path d="M23.5 4.5v3a1.5 1.5 0 0 0 0-3Z" fill="#000" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <!-- Privacy — pinned at top -->
+  <div class="privacy-bar f1">
+    <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><rect x="1" y="5" width="8" height="7" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3 5V3.5a2 2 0 1 1 4 0V5" stroke="currentColor" stroke-width="1.1"/></svg>
+    Your health data stays on this iPhone
+  </div>
+
+  <!-- Scroll -->
+  <div class="scroll">
+
+    <!-- App title -->
+    <div class="greeting f2">
+      <div class="greeting-title">Vitals</div>
+    </div>
+
+    <!-- Four stacked blocks -->
+    <div class="blocks">
+
+      <!-- ① Health Records — doc.text.fill (Apple Health exact) -->
+      <div class="block sym-gray f3">
+        <div class="block-top">
+          <div class="block-sym">
+            <!-- clipboard.list — Apple Health "מסמכים רפואיים" — pixel accurate from screenshot -->
+            <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+              <rect x="0" y="3" width="20" height="21" rx="3.5" fill="#8e8e93"/>
+              <rect x="6" y="0" width="8" height="6" rx="2" fill="#8e8e93"/>
+              <rect x="7.5" y="0.5" width="5" height="3" rx="1.5" fill="#f2f2f7"/>
+              <path d="M4.5 9.5h11M4.5 13h11M4.5 16.5h7" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="block-name" style="color:#8e8e93;">Health Records</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:3px;flex-shrink:0;"><span style="font-size:14px;font-weight:400;color:#848484;">Mar 18</span><img src="https://www.figma.com/api/mcp/asset/f8f04cae-5def-4929-bace-4c062103f34e" width="18" height="18" alt="" style="opacity:0.4;"/></div>
+        </div>
+        <div class="block-bottom">
+          <div style="font-size:34px;font-weight:200;letter-spacing:-1px;color:var(--label-primary);line-height:1;">3</div>
+          <div style="font-size:13px;font-weight:400;color:var(--label-secondary);letter-spacing:-0.08px;">documents · Last: Mar 18</div>
+        </div>
+      </div>
+
+      <!-- ② Medications — pills.fill (Apple Health exact) -->
+      <div class="block sym-teal f4" id="med-home-block">
+        <div class="block-top">
+          <div class="block-sym">
+            <!-- pills — Apple Health "תרופות" — blue pill + blue circle with minus, from screenshots -->
+            <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
+              <!-- capsule pill tilted ~45deg — two-tone blue -->
+              <rect x="1" y="5" width="18" height="10" rx="5" fill="#3a82f7" transform="rotate(-35 10 10)"/>
+              <clipPath id="pc"><rect x="1" y="5" width="18" height="10" rx="5" transform="rotate(-35 10 10)"/></clipPath>
+              <rect x="1" y="5" width="9" height="10" rx="0" fill="rgba(255,255,255,0.3)" transform="rotate(-35 10 10)" clip-path="url(#pc)"/>
+              <!-- small blue circle with minus — bottom right -->
+              <circle cx="20.5" cy="16.5" r="5.5" fill="#3a82f7"/>
+              <path d="M17.5 16.5h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="block-name c-teal">Medications</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:3px;flex-shrink:0;"><span style="font-size:14px;font-weight:400;color:#848484;">Today</span><img src="https://www.figma.com/api/mcp/asset/f8f04cae-5def-4929-bace-4c062103f34e" width="18" height="18" alt="" style="opacity:0.4;"/></div>
+        </div>
+        <div class="block-bottom" style="gap:7px;">
+          <!-- Morning row -->
+          <div style="display:flex;align-items:center;gap:0;">
+            <div style="flex:1;">
+              <div style="font-size:10px;font-weight:600;color:#3a82f7;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:1px;">Morning</div>
+              <div style="font-size:12px;font-weight:400;color:var(--label-primary);letter-spacing:-0.08px;line-height:1.3;">Lisinopril · Amlodipine</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button class="mbtn mbtn-x" id="hm-0-x" onclick="homemedAct(0,'x')" aria-label="Skip">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="#eb4b62" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </button>
+              <button class="mbtn mbtn-v" id="hm-0-v" onclick="homemedAct(0,'v')" aria-label="Taken">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5l3.5 3L11 1" stroke="#67ce67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <!-- Evening row -->
+          <div style="display:flex;align-items:center;gap:0;padding-top:6px;border-top:0.5px solid #e6e6e6;">
+            <div style="flex:1;">
+              <div style="font-size:10px;font-weight:600;color:#3a82f7;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:1px;">Evening</div>
+              <div style="font-size:12px;font-weight:400;color:var(--label-primary);letter-spacing:-0.08px;line-height:1.3;">Metoprolol</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button class="mbtn mbtn-x" id="hm-1-x" onclick="homemedAct(1,'x')" aria-label="Skip">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="#eb4b62" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </button>
+              <button class="mbtn mbtn-v" id="hm-1-v" onclick="homemedAct(1,'v')" aria-label="Taken">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5l3.5 3L11 1" stroke="#67ce67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ Insights — lightbulb.fill (Apple Health exact) -->
+      <div class="block sym-indigo f5">
+        <div class="block-top">
+          <div class="block-sym">
+            <svg width="18" height="24" viewBox="0 0 18 24" fill="#5856d6">
+              <path d="M9 0C5.13 0 2 3.13 2 7c0 2.6 1.4 4.9 3.5 6.2V16h7v-2.8C14.6 11.9 16 9.6 16 7c0-3.87-3.13-7-7-7Z"/>
+              <rect x="5.5" y="17.5" width="7" height="1.5" rx="0.75" fill="#5856d6"/>
+              <rect x="6.5" y="20.5" width="5" height="1.5" rx="0.75" fill="#5856d6"/>
+            </svg>
+          </div>
+          <div class="block-name c-indigo">Insights</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:3px;flex-shrink:0;"><span style="font-size:14px;font-weight:400;color:#848484;">Today</span><img src="https://www.figma.com/api/mcp/asset/f8f04cae-5def-4929-bace-4c062103f34e" width="18" height="18" alt="" style="opacity:0.4;"/></div>
+        </div>
+        <div class="block-bottom">
+          <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;color:var(--label-tertiary);margin-bottom:3px;">Latest finding</div>
+          <div class="block-quote">BP readings more stable over the past 7 days.</div>
+        </div>
+      </div>
+
+      <!-- ④ Blood Pressure — Apple Health exact -->
+      <div class="block sym-red f6">
+        <div class="block-top">
+          <img src="https://www.figma.com/api/mcp/asset/9dba0f58-a134-45d5-8f08-9bd4234008ca" width="18" height="18" style="flex-shrink:0;" alt=""/>
+          <div class="block-name c-red" style="margin-left:3px;">Blood Pressure</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:3px;flex-shrink:0;">
+            <span style="font-size:14px;font-weight:400;color:#848484;">Today</span>
+            <img src="https://www.figma.com/api/mcp/asset/f8f04cae-5def-4929-bace-4c062103f34e" width="18" height="18" alt="" style="opacity:0.35;"/>
+          </div>
+        </div>
+                <div class="block-bottom">
+          <!-- Reading — Apple Health style: big number, date tight below -->
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <span style="font-size:34px;font-weight:200;letter-spacing:-1px;color:var(--label-primary);line-height:1;">128</span>
+            <span style="font-size:22px;font-weight:200;color:var(--label-tertiary);line-height:1;">/</span>
+            <span style="font-size:34px;font-weight:200;letter-spacing:-1px;color:var(--label-primary);line-height:1;">82</span>
+            <span style="font-size:13px;font-weight:400;color:var(--label-secondary);letter-spacing:-0.08px;align-self:flex-end;padding-bottom:4px;">mmHg</span>
+          </div>
+          <!-- Date tight below number — exactly as Apple Health -->
+          <div style="font-size:12px;font-weight:400;color:var(--label-tertiary);letter-spacing:-0.08px;margin-top:2px;">Today, 9:14 AM</div>
+        </div>
+      </div>
+
+    </div><!-- /blocks -->
+  </div><!-- /scroll -->
+
+  <!-- Medication backdrop + sheet -->
+  <div class="med-backdrop" id="med-backdrop" onclick="closeSheet()"></div>
+  <div class="med-sheet" id="med-sheet">
+    <div class="grabber"></div>
+    <div class="med-header">
+      <div class="med-eyebrow">Medication reminder</div>
+      <div class="med-title">Did you take your medications?</div>
+      <div class="med-subtitle">Morning doses · 8:00 AM</div>
+    </div>
+    <div class="med-list-full">
+      <div class="med-item" id="smi-0">
+        <div class="med-info">
+          <div class="med-name">Lisinopril</div>
+          <div class="med-dose">10 mg · once daily</div>
+          <div class="med-note">Take with water</div>
+        </div>
+        <div class="med-btns-full">
+          <button class="mfbtn mfbtn-x" id="sf-0-x" onclick="sheetMed(0,'x')" aria-label="Skip"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 1.5l10 10M11.5 1.5l-10 10" stroke="#ff3b30" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="mfbtn mfbtn-v" id="sf-0-v" onclick="sheetMed(0,'v')" aria-label="Taken"><svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1.5 5.5l4.5 4L14.5 1" stroke="#34c759" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="med-item" id="smi-1">
+        <div class="med-info">
+          <div class="med-name">Amlodipine</div>
+          <div class="med-dose">5 mg · once daily</div>
+          <div class="med-note">Can be taken with food</div>
+        </div>
+        <div class="med-btns-full">
+          <button class="mfbtn mfbtn-x" id="sf-1-x" onclick="sheetMed(1,'x')" aria-label="Skip"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 1.5l10 10M11.5 1.5l-10 10" stroke="#ff3b30" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="mfbtn mfbtn-v" id="sf-1-v" onclick="sheetMed(1,'v')" aria-label="Taken"><svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1.5 5.5l4.5 4L14.5 1" stroke="#34c759" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <div class="done-card" id="done-card">
+      <div class="done-ico"><svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1.5 5.5l4.5 4L14.5 1" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="done-txt">All medications logged for this morning.</div>
+    </div>
+    <button class="sheet-done" onclick="closeSheet()">Done</button>
+  </div>
+
+</div><!-- /phone -->
+<script>
+/* ── Medication state (shared between block + sheet) ── */
+const state = { 0: null, 1: null };
+
+/* ── Mini buttons IN the home block ─────────────── */
+function homemedAct(idx, action) {
+  if (state[idx] !== null) return;
+  state[idx] = action;
+  applyHomeState(idx, action);
+  applySheetState(idx, action);
+  if (state[0] !== null && state[1] !== null) {
+    setTimeout(() => document.getElementById('done-card').classList.add('show'), 300);
+  }
+}
+
+function applyHomeState(idx, action) {
+  const xBtn = document.getElementById('hm-'+idx+'-x');
+  const vBtn = document.getElementById('hm-'+idx+'-v');
+  if (action === 'v') {
+    vBtn.className = 'mbtn done-v';
+    vBtn.innerHTML = '<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5l3.5 3L11 1" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    xBtn.style.opacity = '0.2';
+    xBtn.style.pointerEvents = 'none';
+  } else {
+    xBtn.className = 'mbtn done-x';
+    xBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    vBtn.style.opacity = '0.2';
+    vBtn.style.pointerEvents = 'none';
+  }
+}
+
+/* ── Full sheet ──────────────────────────────────── */
+function openSheet() {
+  document.getElementById('med-backdrop').classList.add('open');
+  document.getElementById('med-sheet').classList.add('open');
+}
+function closeSheet() {
+  document.getElementById('med-backdrop').classList.remove('open');
+  document.getElementById('med-sheet').classList.remove('open');
+}
+
+function sheetMed(idx, action) {
+  if (state[idx] !== null) return;
+  state[idx] = action;
+  applyHomeState(idx, action);
+  applySheetState(idx, action);
+  const item = document.getElementById('smi-'+idx);
+  item.classList.add('resolved');
+  if (state[0] !== null && state[1] !== null) {
+    setTimeout(() => document.getElementById('done-card').classList.add('show'), 300);
+  }
+}
+
+function applySheetState(idx, action) {
+  const item = document.getElementById('smi-'+idx);
+  if (!item) return;
+  item.classList.add('resolved');
+  const xBtn = document.getElementById('sf-'+idx+'-x');
+  const vBtn = document.getElementById('sf-'+idx+'-v');
+  if (action === 'v') {
+    vBtn.className = 'mfbtn done-v';
+    vBtn.innerHTML = '<svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1.5 5.5l4.5 4L14.5 1" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    xBtn.style.opacity = '0.2';
+  } else {
+    xBtn.className = 'mfbtn done-x';
+    xBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 1.5l10 10M11.5 1.5l-10 10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+    vBtn.style.opacity = '0.2';
+  }
+}
+</script>
+</body>
+</html>
